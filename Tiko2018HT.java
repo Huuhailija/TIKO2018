@@ -10,7 +10,7 @@ import java.sql.*;
 import java.util.Scanner;
 
 public class Tiko2018HT {
-  
+  //Test
   private static final String PROTOKOLLA = "";
   private static final String PALVELIN = "";
   private static final int PORTTI = 5432;
