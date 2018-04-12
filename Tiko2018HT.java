@@ -185,4 +185,59 @@ public class Tiko2018HT {
       System.out.println(e.getMessage());
     }
   }
+
+  //Lisätään teos tietokantaan
+  public static void lisaaTeos() {
+    Scanner sc = new Scanner(System.in);
+    String knimi;
+    String tekija;
+    String luokka;
+    String isbn;
+    int nide;
+    String hinta;
+    String osto;
+    String massa;
+    boolean loytyi = false;
+    System.out.println("Lisää teos tai nide tietokantaan:");
+
+    do {
+
+      System.out.println("Anna teoksen ISBN");
+      isbn = sc.nextLine();
+      // Tarkastetaan onko ISBN teos jo tietokannassa.
+      try {
+        Statement stmt;
+        stmt = con.createStatement();
+        ResultSet rs = stmt.executeQuery("SELECT " + isbn + "FROM Teos WHERE isbn=" + isbn);
+        if (!rs.isBeforeFirst()) {
+          System.out.println("Teosta ei ole tietokannassa. Tarvitaan lisätietoja.");
+          System.out.println("Anna kirjan nimi:");
+          knimi = sc.nextLine();
+          System.out.println("Anna tekijä:");
+          tekija = sc.nextLine();
+          System.out.println("Anna luokka:");
+          luokka = sc.nextLine();
+
+          stmt.executeUpdate("INSERT INTO teos VALUES ('" + isbn +"','" + knimi + "','" + tekija + "','" + luokka + "')");
+        }
+        System.out.println("Teos tietokannassa, lisätään nide.");
+        System.out.println("Anna myynti hinta:");
+        hinta = sc.nextLine();
+        System.out.println("Anna osto hinta:");
+        osto = sc.nextLine();
+        System.out.println("Anna kirjan massa:");
+        massa = sc.nextLine();
+
+        rs = stmt.executeQuery("SELECT * FROM nide");
+        rs.next();
+        nide = rs.getInt("nide_id") + 1;
+
+        stmt.executeUpdate("INSERT INTO nide VALUES ('" + nide +"','" + hinta + "','" + osto + "','" + massa + "')");
+      }
+      catch (SQLException e) {
+        System.out.println("Virhe! " + e.getMessage());
+      }
+    }
+    while (!loytyi);
+  }
 }
