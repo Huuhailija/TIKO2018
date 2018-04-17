@@ -251,6 +251,7 @@ public class Tiko2018HT {
 	  String tyyppi;
 	  String luokka;
 	  
+	  // Kysyt‰‰n k‰ytt‰j‰lt‰ mill‰ hakutermill‰ h‰n teosta haluaa hakea.
 	  System.out.println("Mill‰ haluat hakea teosta? 1. Teoksen nimell‰ 2. Teoksen tekij‰ll‰ 3. Teoksen tyypill‰ 4. Teoksen luokalla")
 	  valinta = sc.nextLine();
 	  
