@@ -240,4 +240,135 @@ public class Tiko2018HT {
     }
     while (!loytyi);
   }
+  
+  // Käyttäjä hakee teosta
+  public static void haeTeos() {
+	  
+	  Scanner sc = new Scanner(System.in);
+	  int valinta;
+	  String nimi;
+	  String tekijä;
+	  String tyyppi;
+	  String luokka;
+	  
+	  System.out.println("Millä haluat hakea teosta? 1. Teoksen nimellä 2. Teoksen tekijällä 3. Teoksen tyypillä 4. Teoksen luokalla")
+	  valinta = sc.nextLine();
+	  
+	  boolean oikeaValinta = false;
+	  do {
+	  
+		  if (valinta == 1) {
+			  oikeaValinta = true;
+			  System.out.println("Anna teoksen nimi:");
+			  nimi = sc.nextLine();
+		  
+			  Statement stmt;
+		  
+			  try {
+				  // Tehdään kysely ja katsotaan, löytyykö hakusanalla teosta.
+				  stmt = connect.createstatement();
+				  PreparedStatement prstmt = connect.prepareStatement("SELECT * FROM teos WHERE nimi LIKE ?");
+				  prstmt.setString(1, "'%" + nimi + "%'");
+			  
+				  ResultSet rs = prstmt.executeQuery();
+				  System.out.println("Tulokset:");
+				  while(rs.next()) {
+					  System.out.println(rs.getString("nimi") + ", " + rs.getString("tekija") + ", " + rs.getString("isbn")
+					  						+ rs.getString("tyyppi") + ", " + rs.getString("luokka"));
+				  
+				  }	  
+			  	}		
+			  
+			  catch (SQLException e) {
+				  System.out.println("Virhe!" + e.getMessage());
+			  
+			  }
+		 }
+	  
+		  if (valinta == 2) {
+			  oikeaValinta = true;
+			  System.out.println("Anna tekijän nimi:");
+			  tekijä = sc.nextLine();
+		  
+			  Statement stmt;
+		  
+			  try {
+				  // Tehdään kysely ja katsotaan, löytyykö hakusanalla teosta.
+				  stmt = connect.createstatement();
+				  PreparedStatement prstmt = connect.prepareStatement("SELECT * FROM teos WHERE tekijä LIKE ?");
+				  prstmt.setString(1, "'%" + tekijä + "%'");
+			  
+				  ResultSet rs = prstmt.executeQuery();
+				  System.out.println("Tulokset:");
+				  while(rs.next()) {
+					  System.out.println(rs.getString("nimi") + ", " + rs.getString("tekija") + ", " + rs.getString("isbn")
+					  						+ rs.getString("tyyppi") + ", " + rs.getString("luokka"));
+				  
+				  }	  
+			  }
+			  catch (SQLException e) {
+				  System.out.println("Virhe!" + e.getMessage());
+			  
+			  }
+		  }
+	  
+		  if (valinta == 3) {
+			  oikeaValinta = true;
+			  System.out.println("Anna teoksen tyyppi:");
+			  tyyppi = sc.nextLine();
+		  
+			  Statement stmt;
+		  
+			  try {
+				  // Tehdään kysely ja katsotaan, löytyykö hakusanalla teosta.
+				  stmt = connect.createstatement();
+				  PreparedStatement prstmt = connect.prepareStatement("SELECT * FROM teos WHERE tyyppi LIKE ?");
+				  prstmt.setString(1, "'%" + tyyppi + "%'");
+			  
+				  ResultSet rs = prstmt.executeQuery();
+				  System.out.println("Tulokset:");
+				  while(rs.next()) {
+					  System.out.println(rs.getString("nimi") + ", " + rs.getString("tekija") + ", " + rs.getString("isbn")
+					  						+ rs.getString("tyyppi") + ", " + rs.getString("luokka"));
+				  }	  
+			  }
+			  catch (SQLException e) {
+				  System.out.println("Virhe!" + e.getMessage());
+			  
+			  }
+		  }
+		  
+		  if (valinta == 4) {
+			  oikeaValinta = true;
+			  System.out.println("Anna teoksen luokka:");
+		  	luokka = sc.nextLine();
+		  
+		  	Statement stmt;
+		  
+		  	try {
+		  		// Tehdään kysely ja katsotaan, löytyykö hakusanalla teosta.
+		  		stmt = connect.createstatement();
+		  		PreparedStatement prstmt = connect.prepareStatement("SELECT * FROM teos WHERE luokka LIKE ?");
+		  		prstmt.setString(1, "'%" + luokka + "%'");
+			  
+		  		ResultSet rs = prstmt.executeQuery();
+		  		System.out.println("Tulokset:");
+		  		while(rs.next()) {
+				  System.out.println(rs.getString("nimi") + ", " + rs.getString("tekija") + ", " + rs.getString("isbn")
+				  						+ rs.getString("tyyppi") + ", " + rs.getString("luokka"));
+				  
+		  		}	  
+		  	}
+		  	catch (SQLException e) {
+		  		System.out.println("Virhe!" + e.getMessage());
+			  
+		  	}
+		  }
+	  
+	  	}
+	  
+	  while (!oikeaValinta);
+	 
+	  
+  }
 }
