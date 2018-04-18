@@ -11,12 +11,13 @@ import java.util.Scanner;
 
 public class Tiko2018HT {
   //Test
-  private static final String PROTOKOLLA = "";
-  private static final String PALVELIN = "";
+  private static final String AJURI = "org.postgresql.Driver";
+  private static final String PROTOKOLLA = "jdbc:postgresql:";
+  private static final String PALVELIN = "dbstud2.sis.uta.fi";
   private static final int PORTTI = 5432;
-  private static final String TIETOKANTA = "";
-  private static final String KAYTTAJA = "";
-  private static final String SALASANA = "";
+  private static final String TIETOKANTA = "tiko2018r12";
+  private static final String KAYTTAJA = "a660929";
+  private static final String SALASANA = "teemu123";
   
   private static Connection con = null;
   
@@ -181,7 +182,14 @@ public class Tiko2018HT {
   
   //Ottaa yhteyden tietokantaan
   public static void yhdista() {
-    try {
+      try {
+          Class.forName(AJURI);
+      }
+      catch (ClassNotFoundException e) {
+          System.out.println(e.getMessage());
+      }
+
+      try {
       con=DriverManager.getConnection(PROTOKOLLA + "//" + PALVELIN + ":" + PORTTI + "/" + TIETOKANTA, KAYTTAJA, SALASANA); 
     }
     catch (SQLException e) {
@@ -197,6 +205,7 @@ public class Tiko2018HT {
     String tekija;
     String luokka;
     String isbn;
+    String vuosi;
     int nide_id;
     String hinta;
     String osto;
@@ -204,23 +213,25 @@ public class Tiko2018HT {
     boolean toista = false;
     System.out.println("Lisää teos tai nide tietokantaan:");
 
-      System.out.println("Anna teoksen ISBN");
-      isbn = sc.nextLine();
-      // Tarkastetaan onko ISBN teos jo tietokannassa.
+      System.out.println("Anna teoksen nimi.");
+      knimi = sc.nextLine();
+      // Tarkastetaan onko teos jo tietokannassa.
       try {
         Statement stmt;
         stmt = con.createStatement();
-        ResultSet rs = stmt.executeQuery("SELECT " + isbn + "FROM Teos WHERE isbn="+ isbn);
+        ResultSet rs = stmt.executeQuery("SELECT nimi FROM teos WHERE nimi='" + knimi + "'");
         if (!rs.isBeforeFirst()) {
           System.out.println("Teosta ei ole tietokannassa. Tarvitaan lisätietoja.");
-          System.out.println("Anna kirjan nimi:");
-          knimi = sc.nextLine();
+          System.out.println("Anna isbn:");
+          isbn = sc.nextLine();
           System.out.println("Anna tekijä:");
           tekija = sc.nextLine();
+          System.out.println("Anna vuosi:");
+          vuosi = sc.nextLine();
           System.out.println("Anna luokka:");
           luokka = sc.nextLine();
 
-          stmt.executeUpdate("INSERT INTO teos VALUES ('" + isbn +"','" + knimi + "','" + tekija + "','" + luokka + "')");
+          stmt.executeUpdate("INSERT INTO teos VALUES ('" + isbn +"','" + knimi + "','" + tekija + "','"+vuosi+ "','" + luokka + "')");
         }
 
         //Jos teos löytyy tietokannasta, niin lisätään nide, josta kysystään lisätietoja.
