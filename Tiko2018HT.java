@@ -10,7 +10,7 @@ import java.sql.*;
 import java.util.Scanner;
 
 public class Tiko2018HT {
-  //Test
+  //Yhteys tietokantaan
   private static final String AJURI = "org.postgresql.Driver";
   private static final String PROTOKOLLA = "jdbc:postgresql:";
   private static final String PALVELIN = "dbstud2.sis.uta.fi";
@@ -20,6 +20,11 @@ public class Tiko2018HT {
   private static final String SALASANA = "teemu123";
   
   private static Connection con = null;
+  
+  private static Scanner sc = new Scanner(System.in);
+  
+  //Sisäänkirjautunut käyttäjä
+  private static String kayttaja = "";
   
   public static void main(String[] args) {
 
@@ -42,11 +47,9 @@ public class Tiko2018HT {
 
       System.out.println("Kirjaudu sisään syöttämällä '1'");
       System.out.println("Luo uusi käyttäjätili syöttämällä '2'");
-      System.out.println("Lisää teos tai nide syöttämällä '3'");
 
-      Scanner sc = new Scanner(System.in);
-      String syote = sc.next();
-      while(!syote.equals("1") && !syote.equals("2") && !syote.equals("3")) {
+      String syote = sc.nextLine();
+      while(!syote.equals("1") && !syote.equals("2")) {
         System.out.println("Virheellinen syöte!");
         syote = sc.nextLine();
       }
@@ -56,10 +59,6 @@ public class Tiko2018HT {
       else if(syote.equals("2")) {
         rekisteroidy();
       }
-      else if(syote.equals("3")) {
-        lisaaTeos();
-      }
-      sc.close();
   }
   
   //Uuden käyttäjän luonti
@@ -71,8 +70,6 @@ public class Tiko2018HT {
     String snimi;
     String osoite;
     String pnum;
-
-    Scanner sc = new Scanner(System.in);
 
     System.out.println("\nUuden käyttäjätilin luonti.");
     
@@ -144,30 +141,29 @@ public class Tiko2018HT {
     stmt.executeUpdate("INSERT INTO kayttaja VALUES('" + knimi + "', '" + salasana + "')");
     stmt.executeUpdate("INSERT INTO asiakas VALUES(" + id + ", '" + enimi + "', '" + snimi + "', '" + osoite + "', '" + pnum + "', '" + knimi + "')");
     
-    sc.close();
+    kayttaja = knimi;
+    avaaEtusivu();
   }
   
   //Kirjautuminen jo olemassa olevilla tunnuksilla
   public static void kirjaudu() throws SQLException {
     
-    Scanner sc = new Scanner(System.in);
-    
     System.out.println("\nSisäänkirjautuminen");
     
     //Katsoo löytyykö salasanaa ja käyttäjänimeä vastaava käyttäjä tietokannasta
+    String knimi;
     boolean loytyi = false;
     do {
-      String kayttaja;
+
       System.out.println("Syötä käyttäjänimi:");
-      kayttaja = sc.nextLine();
+      knimi = sc.nextLine();
 
       String salasana;
       System.out.println("Syötä salasana:");
       salasana = sc.nextLine();
-      
       Statement stmt;
       stmt = con.createStatement();
-      ResultSet rs = stmt.executeQuery("SELECT COUNT(*) AS lkm FROM kayttaja WHERE ktunnus = '" + kayttaja + "' AND salasana = '" + salasana + "'");
+      ResultSet rs = stmt.executeQuery("SELECT COUNT(*) AS lkm FROM kayttaja WHERE ktunnus = '" + knimi + "' AND salasana = '" + salasana + "'");
       rs.next();
       if(rs.getInt("lkm") == 1) {
         loytyi = true;
@@ -177,25 +173,161 @@ public class Tiko2018HT {
       }
     }
     while(!loytyi);
-    sc.close();
+    kayttaja = knimi;
+    avaaEtusivu();
   }
   
   //Ottaa yhteyden tietokantaan
   public static void yhdista() {
-      try {
+    try {
           Class.forName(AJURI);
-      }
-      catch (ClassNotFoundException e) {
+    }
+    catch (ClassNotFoundException e) {
           System.out.println(e.getMessage());
-      }
-
-      try {
+    }
+    
+    try {
       con=DriverManager.getConnection(PROTOKOLLA + "//" + PALVELIN + ":" + PORTTI + "/" + TIETOKANTA, KAYTTAJA, SALASANA); 
     }
     catch (SQLException e) {
       System.out.println("Tietokantayhteyden avaus ei onnistu");
       System.out.println(e.getMessage());
     }
+  }
+  
+  public static void avaaEtusivu() throws SQLException {
+    System.out.println("\nTervetuloa sisään " + kayttaja + "\n");
+    boolean lopeta = false;
+    while(!lopeta) {
+      System.out.println("Etusivu\nValitse komento syöttämällä komentoa vastaava numero:");
+      System.out.println("[0] Kirjaudu ulos");
+      System.out.println("[1] Lisää teos");
+      System.out.println("[7] Tulosta raportti R1");
+      System.out.println("[8] Tulosta raportti R2");
+      
+      String komento;
+      komento = sc.nextLine();
+      //Mikä tahansa numero 0-9
+      if(komento.matches("\\d")) {
+        switch(komento) {
+          case "0":
+            lopeta = true;
+            break;
+          case "1":
+            lisaaTeos();
+            break;
+          case "7":
+            tulostaR1();
+            break;
+          case "8":
+            tulostaR2();
+            break;
+          default:
+            System.out.println("Komentoa ei ole olemassa!\n");
+            break;
+        }
+      }
+      else {
+        System.out.println("Virheellinen komento!");
+      }
+    }
+    System.out.println("\nOlet kirjautunut ulos\n");
+    
+  }
+  
+  //Tulostaa näytölle raportin R1
+  public static void tulostaR1() throws SQLException {
+    
+    System.out.println("\nLuetellaan teokset jotka täsmäävät hakusanaan");
+    
+    //Samalla kertaa voi tehdä useamman kyselyn eri hakusanoilla
+    boolean jatka = true;
+    while(jatka) {
+      System.out.println("Syötä hakusana:");
+      String hakusana = sc.nextLine();
+
+      //Määrittää kuinka monta hakutulosta saatiin
+      PreparedStatement lkm = con.prepareStatement("SELECT COUNT(*) AS lkm FROM teos WHERE LOWER(nimi) LIKE ? OR LOWER(tekija) LIKE ? OR LOWER(tyyppi) LIKE ? OR LOWER(luokka) LIKE ?");
+      //Määrittää kaikki haun tulokset
+      PreparedStatement tulokset = con.prepareStatement("SELECT * FROM teos WHERE LOWER(nimi) LIKE ? OR LOWER(tekija) LIKE ? OR LOWER(tyyppi) LIKE ? OR LOWER(luokka) LIKE ?");
+      tulokset.setString(1, "%" + hakusana + "%");
+      tulokset.setString(2, "%" + hakusana + "%");
+      tulokset.setString(3, "%" + hakusana + "%");
+      tulokset.setString(4, "%" + hakusana + "%");
+      lkm.setString(1, "%" + hakusana + "%");
+      lkm.setString(2, "%" + hakusana + "%");
+      lkm.setString(3, "%" + hakusana + "%");
+      lkm.setString(4, "%" + hakusana + "%");
+      ResultSet rs = lkm.executeQuery();
+      rs.next();
+      System.out.println("\nHakusanalla \"" + hakusana + "\" löytyi yhteensä " + rs.getString("lkm") + " tulosta:");
+      rs = tulokset.executeQuery();
+      while(rs.next()) {
+        System.out.print(rs.getString("tekija") + ", " + rs.getString("nimi") + ", ");
+        if(rs.getString("isbn") != null) {
+          System.out.print(rs.getString("isbn") + ", ");
+        }
+        System.out.println(rs.getString("tyyppi") + ", " + rs.getString("luokka"));
+      }
+      //Haluaako käyttäjä tehdä uuden haun
+      System.out.println("\n[1] Tee uusi haku | [2] Palaa etusivulle");
+      String syote = sc.nextLine();
+      if(!syote.equals("1")) {
+        jatka = false;
+        System.out.println("Palataan etusivulle\n");
+      }
+    }
+  }
+  
+  //tulostaa näytölle raportin R2
+  public static void tulostaR2() throws SQLException {
+    
+    System.out.println("Tulostetaan raportti eri luokkien sisältämistä teoksista ja niiden kokonaismyyntihinnat ja keskihinnat");
+    System.out.println("\n------------------------------------------------------");
+    
+    //Uloin silmukka hakee kaikki luokat ja käy ne läpi yksi kerrallaan
+    PreparedStatement luokkaHaku = con.prepareStatement("SELECT DISTINCT luokka FROM teos");
+    ResultSet luokat = luokkaHaku.executeQuery();
+    while(luokat.next()) {
+      String luokka = luokat.getString("luokka");
+      System.out.println("Luokka: " + luokka +"\nLuokan " + luokka + " sisältämät teoket:\n");
+      PreparedStatement teosHaku = con.prepareStatement("SELECT nimi, teos_id FROM teos WHERE luokka = ?");
+      teosHaku.setString(1, luokka);
+      ResultSet teokset = teosHaku.executeQuery();
+      
+      //Keskimmäinen silmukka hakee kaikki luokan teokset ja käy ne läpi kerrallaan
+      //Jokaisesta teoksesta kerätään sen sisältämien niteiden summa ja lukumäärä
+      double summa = 0;
+      int lukumaara = 0;
+      
+      while(teokset.next()) {
+        System.out.println(teokset.getString("nimi"));
+        int id = teokset.getInt("teos_id");
+        PreparedStatement nideHaku = con.prepareStatement("SELECT SUM(hinta) AS summa, COUNT(*) AS lkm FROM nide WHERE teos_id = ?");
+        nideHaku.setInt(1, id);
+        ResultSet niteet = nideHaku.executeQuery();
+        
+        //Sisimmäinen silmukka käy läpi kaikki teoksen sisältämät niteet ja
+        //laskee niteiden summan ja lukumäärän ja lisää ne muuttujiin
+        while(niteet.next()) {
+          if(niteet.getString("summa") != null) {
+            summa += Double.parseDouble(niteet.getString("summa"));
+          }
+          lukumaara += Integer.parseInt(niteet.getString("lkm"));
+        }
+      }
+      
+      //Lopuksi tulostetaan luokan teosten niteiden lukumäärä, summa ja keskihinta
+      System.out.println("\nTeosten niteiden yhteislukumäärä: " + lukumaara);
+      System.out.println("Teosten niteiden yhteismyyntihinta: " + summa);
+      if(summa > 0)
+        System.out.println("Teosten niteiden keskihinta: " + summa / lukumaara);
+      else
+        System.out.println("Teosten niteiden keskihinta: 0");
+      System.out.println("\n------------------------------------------------------\n");
+    }
+    System.out.println("Palaa etusivulle syöttämällä mitä tahansa:");
+    sc.nextLine();
   }
 
   //Lisätään teos tietokantaan
@@ -233,7 +365,7 @@ public class Tiko2018HT {
 
           stmt.executeUpdate("INSERT INTO teos VALUES ('" + isbn +"','" + knimi + "','" + tekija + "','"+vuosi+ "','" + luokka + "')");
         }
-
+        
         //Jos teos löytyy tietokannasta, niin lisätään nide, josta kysystään lisätietoja.
         System.out.println("Teos tietokannassa, lisätään nide.");
         System.out.println("Anna myynti hinta:");
@@ -247,7 +379,7 @@ public class Tiko2018HT {
           rs = stmt.executeQuery("SELECT * FROM nide");
           rs.next();
           nide_id = rs.getInt("nide_id") + 1;
-
+          
           //Lisätään nide uudelle id:lle ja syötetään käyttäjän antamat arvot.
           stmt.executeUpdate("INSERT INTO nide VALUES ('" + nide_id + "','" + hinta + "','" + osto + "','" + massa + "')");
           System.out.println("Toistetaanko toiminto? Valitse kyllä jos haluat kopioida viime lisäyksen.");
@@ -261,9 +393,8 @@ public class Tiko2018HT {
       System.out.println("Haluatko lisätä toisen teoksen?");
       toista = sc.nextBoolean();
   }
-
   
-  // K�ytt�j� hakee teosta
+  // Käyttäjä hakee teosta
   public static void haeTeos() {
 	  
 	  Scanner sc = new Scanner(System.in);
@@ -273,8 +404,8 @@ public class Tiko2018HT {
 	  String tyyppi;
 	  String luokka;
 	  
-	  // Kysyt��n k�ytt�j�lt� mill� hakutermill� h�n teosta haluaa hakea.
-	  System.out.println("Mill� haluat hakea teosta? 1. Teoksen nimell� 2. Teoksen tekij�ll� 3. Teoksen tyypill� 4. Teoksen luokalla");
+	  // Kysytää käyttäjältä millä hakutermillä hän teosta haluaa hakea.
+	  System.out.println("Millä haluat hakea teosta? 1. Teoksen nimellä 2. Teoksen tekijällä 3. Teoksen tyypillä 4. Teoksen luokalla");
 	  valinta = sc.nextInt();
 	  
 	  boolean oikeaValinta = false;
@@ -288,7 +419,7 @@ public class Tiko2018HT {
 			  Statement stmt;
 		  
 			  try {
-				  // Tehd��n kysely ja katsotaan, l�ytyyk� hakusanalla teosta.
+				  // Tehdään kysely ja katsotaan, löytyykö hakusanalla teosta.
 				  stmt = con.createStatement();
 				  PreparedStatement prstmt = con.prepareStatement("SELECT * FROM teos WHERE nimi LIKE ?");
 				  prstmt.setString(1, "'%" + nimi + "%'");
@@ -310,13 +441,13 @@ public class Tiko2018HT {
 	  
 		  if (valinta == 2) {
 			  oikeaValinta = true;
-			  System.out.println("Anna tekij�n nimi:");
+			  System.out.println("Anna tekijän nimi:");
 			  tekija = sc.nextLine();
 		  
 			  Statement stmt;
 		  
 			  try {
-				  // Tehd��n kysely ja katsotaan, l�ytyyk� hakusanalla teosta.
+				  // Tehdään kysely ja katsotaan, löytyykö hakusanalla teosta.
 				  stmt = con.createStatement();
 				  PreparedStatement prstmt = con.prepareStatement("SELECT * FROM teos WHERE tekij� LIKE ?");
 				  prstmt.setString(1, "'%" + tekija + "%'");
@@ -343,7 +474,7 @@ public class Tiko2018HT {
 			  Statement stmt;
 		  
 			  try {
-				  // Tehd��n kysely ja katsotaan, l�ytyyk� hakusanalla teosta.
+				  // Tehdään kysely ja katsotaan, löytyykö hakusanalla teosta.
 				  stmt = con.createStatement();
 				  PreparedStatement prstmt = con.prepareStatement("SELECT * FROM teos WHERE tyyppi LIKE ?");
 				  prstmt.setString(1, "'%" + tyyppi + "%'");
@@ -369,7 +500,7 @@ public class Tiko2018HT {
 		  	Statement stmt;
 		  
 		  	try {
-		  		// Tehd��n kysely ja katsotaan, l�ytyyk� hakusanalla teosta.
+		  		// Tehdään kysely ja katsotaan, löytyykö hakusanalla teosta.
 		  		stmt = con.createStatement();
 		  		PreparedStatement prstmt = con.prepareStatement("SELECT * FROM teos WHERE luokka LIKE ?");
 		  		prstmt.setString(1, "'%" + luokka + "%'");
