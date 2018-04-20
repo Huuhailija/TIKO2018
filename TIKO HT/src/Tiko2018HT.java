@@ -366,6 +366,19 @@ public class Tiko2018HT {
             System.out.println("Virhe! " + e.getMessage());
         }
         System.out.println("Haluatko lisätä toisen teoksen?");
+        System.out.println("1 = kyllä");
+        System.out.println("2 = ei");
+        String syote = sc.nextLine();
+        while(!syote.equals("1") && !syote.equals("2")) {
+            System.out.println("Virheellinen syöte!");
+            syote = sc.nextLine();
+        }
+        if (syote.equals('1')) {
+            toista = true;
+        }
+        else if (syote.equals('2')){
+            toista = false;
+        }
     }
     while (!toista);
 
