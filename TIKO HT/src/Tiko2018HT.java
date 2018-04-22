@@ -25,6 +25,9 @@ public class Tiko2018HT {
   
   //Sisäänkirjautunut käyttäjä
   private static String kayttaja = "";
+  private static boolean onYllapitaja = false;
+  private static boolean keskus_oikeudet = false;
+  private static boolean d1_oikeudet = false;
   
   public static void main(String[] args) {
 
@@ -173,7 +176,32 @@ public class Tiko2018HT {
       }
     }
     while(!loytyi);
+    
+    //Otetaan ylös käyttäjänimi
     kayttaja = knimi;
+    
+    //Katsotaan onko käyttäjä ylläpitäjä ja mihin tietokantoihin sillä on oikeus
+    Statement stmt = con.createStatement();
+    ResultSet rs = stmt.executeQuery("SELECT COUNT(*) AS lkm FROM yllapitaja WHERE ktunnus = '" + knimi + "'");
+    rs.next();
+    if(rs.getInt("lkm") == 1) {
+      onYllapitaja = true;
+      rs = stmt.executeQuery("SELECT yllapitaja_id FROM yllapitaja WHERE ktunnus = '" + knimi + "'");
+      rs.next();
+      int id = rs.getInt("yllapitaja_id");
+      rs = stmt.executeQuery("SELECT divari_nimi FROM divari WHERE yllapitaja_id = " + id);
+      while(rs.next()) {
+        String divari = rs.getString("divari_nimi");
+        if(divari.equals("D1")) {
+          d1_oikeudet = true;
+          keskus_oikeudet = true;
+        }
+        else if(divari.equals("D2")) {
+          keskus_oikeudet = true;
+        }
+      }
+    }
+    
     avaaEtusivu();
   }
   
@@ -194,16 +222,48 @@ public class Tiko2018HT {
     }
   }
   
+  //Etusivu
   public static void avaaEtusivu() throws SQLException {
+    //Tulostetaan käyttäjän nimi ja rooli
     System.out.println("\nTervetuloa sisään " + kayttaja + "\n");
+    if(!onYllapitaja) {
+      System.out.println("Kayttäjäroolisi on: Asiakas");
+    }
+    else {
+      System.out.println("Käyttäjäroolisi on: Ylläpitaja");
+      if(keskus_oikeudet || d1_oikeudet) {
+        System.out.print("Sinulla on oikeudet seuraaviin tietokantoihin: ");
+        if(keskus_oikeudet) {
+          System.out.print("Keskustietokanta");
+        }
+        if(d1_oikeudet) {
+          System.out.print(", D1");
+        }
+      }
+      System.out.println("\n");
+    }
+    
+    //Lista mahdollisista komennoista riippuen roolista
     boolean lopeta = false;
     while(!lopeta) {
       System.out.println("Etusivu\nValitse komento syöttämällä komentoa vastaava numero:");
       System.out.println("[0] Kirjaudu ulos");
-      System.out.println("[1] Lisää teos");
-      System.out.println("[7] Tulosta raportti R1");
-      System.out.println("[8] Tulosta raportti R2");
+      if(onYllapitaja) {
+        System.out.println("[1] Lisää teos keskustietokantaan");
+        if(d1_oikeudet) {
+          System.out.println("[2] Lisää teos D1 tietokantaan");
+          System.out.println("[3] Tulosta raportti R1");
+          System.out.println("[4] Tulosta raportti R2");
+        }
+        else {
+          System.out.println("[2] Tulosta raportti R1");
+          System.out.println("[3] Tulosta raportti R2");
+        }
+      }
+      else
+        System.out.println("[1] Tilaa kirja");
       
+      //Luetaan käyttäjän antama komento ja jatketaan riippuen komennosta
       String komento;
       komento = sc.nextLine();
       //Mikä tahansa numero 0-9
@@ -213,13 +273,46 @@ public class Tiko2018HT {
             lopeta = true;
             break;
           case "1":
-            lisaaTeos();
+            if(!onYllapitaja) {
+              haeTeos();
+            }
+            else if(onYllapitaja) {
+              lisaaTeos();
+            }
             break;
-          case "7":
-            tulostaR1();
+          case "2":
+            if(onYllapitaja) {
+              if(d1_oikeudet) {
+                lisaaTeos();
+              }
+              else {
+                tulostaR1();
+              }
+            }
+            else {
+              System.out.println("Komentoa ei ole olemassa");
+            }
             break;
-          case "8":
-            tulostaR2();
+          case "3":
+            if(onYllapitaja) {
+              if(d1_oikeudet) {
+                tulostaR1();
+              }
+              else {
+                tulostaR2();
+              }
+            }
+            else {
+              System.out.println("Komentoa ei ole olemassa");
+            }
+            break;
+          case "4":
+            if(onYllapitaja && d1_oikeudet) {
+              tulostaR2();
+            }
+            else {
+              System.out.println("Komentoa ei ole olemassa");
+            }
             break;
           default:
             System.out.println("Komentoa ei ole olemassa!\n");
