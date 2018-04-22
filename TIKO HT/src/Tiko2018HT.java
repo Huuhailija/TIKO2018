@@ -16,8 +16,8 @@ public class Tiko2018HT {
   private static final String PALVELIN = "dbstud2.sis.uta.fi";
   private static final int PORTTI = 5432;
   private static final String TIETOKANTA = "tiko2018r12";
-  private static final String KAYTTAJA = "a660929";
-  private static final String SALASANA = "teemu123";
+  private static final String KAYTTAJA = "";
+  private static final String SALASANA = "";
   
   private static Connection con = null;
   
@@ -214,7 +214,7 @@ public class Tiko2018HT {
           System.out.println(e.getMessage());
     }
     try {
-      con=DriverManager.getConnection(PROTOKOLLA + "//" + PALVELIN + ":" + PORTTI + "/" + TIETOKANTA, KAYTTAJA, SALASANA); 
+      con=DriverManager.getConnection(PROTOKOLLA + "//" + PALVELIN + ":" + PORTTI + "/" + TIETOKANTA);
     }
     catch (SQLException e) {
       System.out.println("Tietokantayhteyden avaus ei onnistu");
