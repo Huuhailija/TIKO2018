@@ -11,24 +11,27 @@ import java.util.Scanner;
 
 public class Tiko2018HT {
   //Yhteys tietokantaan
-  private static final String AJURI = "org.postgresql.Driver";
+  //private static final String AJURI = "org.postgresql.Driver";
   private static final String PROTOKOLLA = "jdbc:postgresql:";
-  private static final String PALVELIN = "dbstud2.sis.uta.fi";
+  private static final String PALVELIN = "localhost";
   private static final int PORTTI = 5432;
-  private static final String TIETOKANTA = "tiko2018r12";
-  private static final String KAYTTAJA = "tikoe2018r12";
-  private static final String SALASANA = "123";
+  private static final String TIETOKANTA = "postgres";
+  private static final String KAYTTAJA = "postgres";
+  private static final String SALASANA = "";
   
   private static Connection con = null;
   
   private static Scanner sc = new Scanner(System.in);
   
   //Sisäänkirjautunut käyttäjä
+  private static final String KESKUS = "Keskusdivari";
+  private static final String D1 = "Divari D1";
+  
   private static String kayttaja = "";
   private static boolean onYllapitaja = false;
   private static boolean keskus_oikeudet = false;
   private static boolean d1_oikeudet = false;
-
+  
   public static void main(String[] args) {
 
     try {
@@ -42,7 +45,7 @@ public class Tiko2018HT {
 
   //Aloitusvalikko kirjautumiseen ja rekisteröitymiseen.
   public static void kaynnista() throws SQLException {
-    
+      
       System.out.println("TIKO 2018 Harjoitustyö\n");
       System.out.println("Tervetuloa keskusdivariin!\n");
 
@@ -50,6 +53,9 @@ public class Tiko2018HT {
 
       System.out.println("Kirjaudu sisään syöttämällä '1'");
       System.out.println("Luo uusi käyttäjätili syöttämällä '2'");
+      
+      Statement stmt = con.createStatement();
+      stmt.execute("SET SEARCH_PATH TO keskusdivari");
 
       String syote = sc.nextLine();
       while(!syote.equals("1") && !syote.equals("2")) {
@@ -207,14 +213,15 @@ public class Tiko2018HT {
   
   //Ottaa yhteyden tietokantaan
   public static void yhdista() {
-    try {
+    /*try {
           Class.forName(AJURI);
     }
     catch (ClassNotFoundException e) {
           System.out.println(e.getMessage());
     }
+    */
     try {
-      con=DriverManager.getConnection(PROTOKOLLA + "//" + PALVELIN + ":" + PORTTI + "/" + TIETOKANTA,KAYTTAJA,SALASANA);
+      con=DriverManager.getConnection(PROTOKOLLA + "//" + PALVELIN + ":" + PORTTI + "/" + TIETOKANTA, KAYTTAJA, SALASANA);
     }
     catch (SQLException e) {
       System.out.println("Tietokantayhteyden avaus ei onnistu");
@@ -252,12 +259,14 @@ public class Tiko2018HT {
         System.out.println("[1] Lisää teos keskustietokantaan");
         if(d1_oikeudet) {
           System.out.println("[2] Lisää teos D1 tietokantaan");
-          System.out.println("[3] Tulosta raportti R1");
-          System.out.println("[4] Tulosta raportti R2");
+          System.out.println("[3] Tulosta raportti R1 keskusdivarista");
+          System.out.println("[4] Tulosta raportti R2 keskusdivarista");
+          System.out.println("[5] Tulosta raportti R1 divarista D1");
+          System.out.println("[6] Tulosta raportti R2 divarista D1");
         }
         else {
-          System.out.println("[2] Tulosta raportti R1");
-          System.out.println("[3] Tulosta raportti R2");
+          System.out.println("[2] Tulosta raportti R1 keskusdivarista");
+          System.out.println("[3] Tulosta raportti R2 keskusdivarista");
         }
       }
       else
@@ -277,16 +286,16 @@ public class Tiko2018HT {
               haeTeos();
             }
             else if(onYllapitaja) {
-              lisaaTeos();
+              lisaaTeos(KESKUS);
             }
             break;
           case "2":
             if(onYllapitaja) {
               if(d1_oikeudet) {
-                lisaaTeos();
+                lisaaTeos(D1);
               }
               else {
-                tulostaR1();
+                tulostaR1(KESKUS);
               }
             }
             else {
@@ -296,10 +305,10 @@ public class Tiko2018HT {
           case "3":
             if(onYllapitaja) {
               if(d1_oikeudet) {
-                tulostaR1();
+                tulostaR1(KESKUS);
               }
               else {
-                tulostaR2();
+                tulostaR2(KESKUS);
               }
             }
             else {
@@ -308,7 +317,23 @@ public class Tiko2018HT {
             break;
           case "4":
             if(onYllapitaja && d1_oikeudet) {
-              tulostaR2();
+              tulostaR2(KESKUS);
+            }
+            else {
+              System.out.println("Komentoa ei ole olemassa");
+            }
+            break;
+          case "5":
+            if(onYllapitaja && d1_oikeudet) {
+              tulostaR1(D1);
+            }
+            else {
+              System.out.println("Komentoa ei ole olemassa");
+            }
+            break;
+          case "6":
+            if(onYllapitaja && d1_oikeudet) {
+              tulostaR2(D1);
             }
             else {
               System.out.println("Komentoa ei ole olemassa");
@@ -328,8 +353,18 @@ public class Tiko2018HT {
   }
   
   //Tulostaa näytölle raportin R1
-  public static void tulostaR1() throws SQLException {
+  public static void tulostaR1(String tietokanta) throws SQLException {
     
+    //Valitaan mitä tietokantaa(schemaa) käytetään
+    if(tietokanta.equals(KESKUS)) {
+      Statement stmt = con.createStatement();
+      stmt.execute("SET SEARCH_PATH TO keskusdivari");
+    }
+    else if(tietokanta.equals(D1)) {
+      Statement stmt = con.createStatement();
+      stmt.execute("SET SEARCH_PATH TO d1");
+    }    
+
     System.out.println("\nLuetellaan teokset jotka täsmäävät hakusanaan");
     
     //Samalla kertaa voi tehdä useamman kyselyn eri hakusanoilla
@@ -369,11 +404,24 @@ public class Tiko2018HT {
         System.out.println("Palataan etusivulle\n");
       }
     }
+    Statement stmt = con.createStatement();
+    stmt.execute("SET SEARCH_PATH TO keskusdivari");
+    
   }
   
   //tulostaa näytölle raportin R2
-  public static void tulostaR2() throws SQLException {
+  public static void tulostaR2(String tietokanta) throws SQLException {
     
+    //Valitaan mitä tietokantaa(schemaa) käytetään
+    if(tietokanta.equals(KESKUS)) {
+      Statement stmt = con.createStatement();
+      stmt.execute("SET SEARCH_PATH TO keskusdivari");
+    }
+    else if(tietokanta.equals(D1)) {
+      Statement stmt = con.createStatement();
+      stmt.execute("SET SEARCH_PATH TO d1");
+    }      
+ 
     System.out.println("Tulostetaan raportti eri luokkien sisältämistä teoksista ja niiden kokonaismyyntihinnat ja keskihinnat");
     System.out.println("\n------------------------------------------------------");
     
@@ -420,15 +468,32 @@ public class Tiko2018HT {
     }
     System.out.println("Palaa etusivulle syöttämällä mitä tahansa:");
     sc.nextLine();
+    
+    Statement stmt = con.createStatement();
+    stmt.execute("SET SEARCH_PATH TO keskusdivari");
+    
   }
 
   //Lisätään teos tietokantaan
-  public static void lisaaTeos() {
+  public static void lisaaTeos(String tietokanta) throws SQLException {
+    
+    //Valitaan mitä tietokantaa(schemaa) käytetään
+    if(tietokanta.equals(KESKUS)) {
+      Statement stmt = con.createStatement();
+      stmt.execute("SET SEARCH_PATH TO keskusdivari");
+    }
+    else if(tietokanta.equals(D1)) {
+      Statement stmt = con.createStatement();
+      stmt.execute("SET SEARCH_PATH TO d1");
+    }
+    
     String knimi;
     String tekija;
+    String tyyppi;
     String luokka;
     String isbn;
     String vuosi;
+    int id;
     boolean toista = false;
     System.out.println("Lisää teos tai nide tietokantaan:");
     do {
@@ -438,7 +503,7 @@ public class Tiko2018HT {
         try {
             Statement stmt;
             stmt = con.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT nimi FROM teos WHERE nimi='" + knimi + "'");
+            ResultSet rs = stmt.executeQuery("SELECT * FROM teos WHERE nimi='" + knimi + "'");
             if (!rs.isBeforeFirst()) {
                 System.out.println("Teosta ei ole tietokannassa. Tarvitaan lisätietoja.");
                 System.out.println("Anna isbn:");
@@ -447,14 +512,34 @@ public class Tiko2018HT {
                 tekija = sc.nextLine();
                 System.out.println("Anna vuosi:");
                 vuosi = sc.nextLine();
+                System.out.println("Anna tyyppi:");
+                tyyppi = sc.nextLine();
                 System.out.println("Anna luokka:");
                 luokka = sc.nextLine();
+                
+                //Laskee teoksen id:n, joka on nykyisten teosten määrä + 1
+                Statement idLaskin = con.createStatement();
+                ResultSet idt = idLaskin.executeQuery("SELECT COUNT(*) AS lkm FROM teos");
+                idt.next();
+                id = 1 + idt.getInt("lkm");
 
-                stmt.executeUpdate("INSERT INTO teos VALUES ('" + isbn + "','" + knimi + "','" + tekija + "','" + vuosi + "','" + luokka + "')");
+                stmt.executeUpdate("INSERT INTO teos VALUES ('" + id + "','" + isbn + "','" + knimi + "','" + tekija + "','" + vuosi + "','" + tyyppi + "','" + luokka + "')");
+                System.out.println("Uusi teos lisätty tietokantaan\n");
             }
-
-            lisaaNide(rs.getInt("teos_id"));
-
+            else {
+              rs.next();
+              id = rs.getInt("teos_id");
+            }
+            System.out.println("Haluatko lisätä teokselle niteen?\n1 = kyllä\n2 = ei");
+            String uusiNide = sc.nextLine();
+            while(!uusiNide.equals("1") && !uusiNide.equals("2")) {
+              System.out.println("Virheellinen syöte!");
+              uusiNide = sc.nextLine();
+            }
+            if(uusiNide.equals("1")) {
+              lisaaNide(id, tietokanta);
+            }
+            
         } catch (SQLException e) {
             System.out.println("Virhe! " + e.getMessage());
         }
@@ -473,19 +558,21 @@ public class Tiko2018HT {
             toista = false;
         }
     }
-    while (!toista);
-
+    while (toista);
+    System.out.println("Palataan etusivulle\n");
+    Statement stmt = con.createStatement();
+    stmt.execute("SET SEARCH_PATH TO keskusdivari");
 
   }
 
   // Lisätään nide tietokantaan vain jos sillä on jo lisätty teos, parametrinä teos_id.
-  public static void lisaaNide(int teos_id) {
+  public static void lisaaNide(int teos_id, String tietokanta) {
       int nide_id;
       String hinta;
       String osto;
       String massa;
       Statement stmt;
-      boolean toista = false;
+      boolean toista;
 
       //Lisätään nide, kun teos on tietokannassa jo. Pyydetään lisätietoja.
       System.out.println("Teos tietokannassa, lisätään nide.");
@@ -498,15 +585,29 @@ public class Tiko2018HT {
       try {
           stmt = con.createStatement();
           do {
-              ResultSet rs = stmt.executeQuery("SELECT * FROM nide");
+              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) AS lkm FROM nide");
               rs.next();
-              nide_id = rs.getInt("nide_id") + 1;
+              nide_id = rs.getInt("lkm") + 1;
 
-              stmt.executeUpdate("INSERT INTO nide (nide_id,hinta,massa,sisaanosto,divari_nimi,teos_id) VALUES ('" + nide_id + "','" + hinta + "','"+ massa +"','" + osto + "','"+ teos_id +"','" + kayttaja +"')");
-              System.out.println("Toistetaanko toiminto? Valitse kyllä jos haluat kopioida viime lisäyksen.");
-              toista = sc.nextBoolean();
+              if(d1_oikeudet && tietokanta.equals(KESKUS)) {
+                stmt.executeUpdate("INSERT INTO nide (nide_id,hinta,massa,myynti_pvm,sisaanosto,divari_nimi,teos_id) VALUES ('" + nide_id + "','" + hinta + "','"+ massa +"', " + null + ", '" + osto + "','"+ "D1" +"','"+teos_id +"')");
+              }
+              else if(d1_oikeudet && tietokanta.equals(D1)) {
+                stmt.executeUpdate("INSERT INTO nide (nide_id,hinta,massa,myynti_pvm,sisaanosto,teos_id) VALUES ('" + nide_id + "','" + hinta + "','"+ massa +"', " + null + ", '" + osto + "','"+ teos_id +"')");
+              }
+              else
+                stmt.executeUpdate("INSERT INTO nide (nide_id,hinta,massa,myynti_pvm,sisaanosto,divari_nimi,teos_id) VALUES ('" + nide_id + "','" + hinta + "','"+ massa +"', " + null + ", '" + osto + "','"+ "D2" +"','"+teos_id +"')");
+              System.out.println("Nide lisätty!");
+              System.out.println("Haluatko lisätä toisen samanlaisen niteen? 1 = kyllä, 2 = ei");
+              String uusi = sc.nextLine();
+              if(uusi.equals("1")) {
+                toista = true;
+              }
+              else {
+                toista = false;
+              }
           }
-          while (!toista);
+          while (toista);
       }
       catch (SQLException e) {
           System.out.println("Virhe!: " + e.getMessage());
