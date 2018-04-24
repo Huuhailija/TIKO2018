@@ -751,14 +751,14 @@ public class Tiko2018HT {
   }
   
  //Käyttäjä tilaa haetun tilauksen.
- public void tilaaTeos(String teoksenNimi) {
+ public static void tilaaTeos(String teoksenNimi) {
 
 	  Scanner sc = new Scanner(System.in);
 	  //Kysytään käyttäjältä haluaako hän tilauksen kyseisestä kirjasta tehdä.
 	  System.out.println("Haluatko tilata tämän teoksen? [1]. Kyllä [2]. En");
-	  int valinta = sc.nextLine();
+	  String valinta = sc.nextLine();
 	  
-	  while (!valinta.equals("1") && (!valinta.equals("2")) {
+	  while (!valinta.equals("1") && (!valinta.equals("2"))) {
 		  
 		  System.out.println("Virheellinen syöte!");
 		  valinta = sc.nextLine();
@@ -776,22 +776,24 @@ public class Tiko2018HT {
 			  
 			  // Tilaus-id on nykyiset tilaukset + 1.
 			  PreparedStatement tilaukset = con.prepareStatement("COUNT(*) as lkm FROM tilaus");
-			  int tilaus_id = tilaukset.getInt("lkm");
+			  ResultSet rs = tilaukset.executeQuery();
+			  int tilaus_id = rs.getInt("lkm");
 			  
 			  // Haetaan asiakas_id kysymällä käyttäjänimeä (Onko parempi tapa saada asiakas_id tässä?)
-			  System.out.println("Anna käyttäjätunnus vahvistaaksesi tilaus");
+			  System.out.println("Anna käyttäjätunnus:");
 			  String knimi = sc.nextLine();
 			  
-			  PreparedStatement asiakasID = ("SELECT asiakas_id FROM asiakas WHERE ktunnus = '" + knimi + "');
-			  String asiakas_id = asiakasID.getString("asiakas_id")
+			  
+			  ResultSet asiakas = stmt.executeQuery(("SELECT asiakas_id FROM asiakas WHERE ktunnus ='" + knimi + "'"));
+			  String asiakas_id = asiakas.getString("asiakas_id");
 			  
 			  // Tämänhetkinen päivämäärä.
-			  java.util.Date utilDate = new Date();
+			  //java.util.Date utilDate = new Date();
 			  
-			  java.sql.Date date = new java.sql.Date(utilDate.getTime());
+			  //java.sql.Date date = new java.sql.Date(utilDate.getTime());
 			  
-			  // Haetaan kirjan hinta.
-			  PreparedStatement teoksenHinta = ("SELECT * FROM teos WHERE nimi = '" + teoksenNimi + "'");
+			  // Haetaan kirjan hinta ja paino.
+			  ResultSet teoksenHinta = stmt.executeQuery("SELECT hinta FROM nide, teos WHERE teos.nimi = '" + teoksenNimi + "' AND teos.teos_id=nide.teos_id");
 			  
 			  String hinta = teoksenHinta.getString("hinta");
 			  
@@ -799,16 +801,41 @@ public class Tiko2018HT {
 			  
 			  String tila = "Varattu";
 			  
+			  // Lisätään uusi rivi tilaus-tauluun.
 			  stmt.executeUpdate("INSERT INTO Tilaus VALUES ('" + tilaus_id + "','" + asiakas_id + "','" + "?" + "','" + hinta + "','" + tila +"')");
-			  stmt.setTimeStamp(1, date);
 			  
-			  System.out.println("Tilaus tehty.");
+			  System.out.println("Kirjan hinta on " + hinta);
+			  
+			  System.out.println("Vahvistetaanko tilaus?[1]Kyllä [2]Ei");
+			  
+			  String vahvNumero = sc.nextLine();
+			  
+			  while (!vahvNumero.equals("1") && (!vahvNumero.equals("2"))) {
+				  
+				  System.out.println("Virheellinen syöte!");
+				  valinta = sc.nextLine();
+			  }
+			  
+			  if (vahvNumero.equals("1")) {
+				  
+				  PreparedStatement paivitaTila = con.prepareStatement("UPDATE Tilaus SET tila = ?" + "WHERE tilaus_id = ?");
+				  paivitaTila.setString(1, "Tilattu");
+				  paivitaTila.setInt(2, tilaus_id);
+				  paivitaTila.executeUpdate();
+				  System.out.println("Tilaus vahvistettu.");
+			  }
+			  
+			  else if (vahvNumero.equals("2")) {
+				  
+				  System.out.println("Tilaus peruutettu.");
+			  }
 			  
 		  }
 		  
 		  catch (SQLException e) {
 			  
 			  System.out.println("Virhe!");
+			  
 		  }
 		  
 	  }
@@ -816,6 +843,7 @@ public class Tiko2018HT {
 	  else if (valinta.equals('2')) {
 		  
 		  System.out.println("Tilausta ei tehty.");
+		  
 	  }
 		  
  }
