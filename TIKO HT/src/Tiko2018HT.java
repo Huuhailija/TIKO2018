@@ -8,7 +8,7 @@
 
 import java.sql.*;
 import java.util.Scanner;
-
+import java.util.Calendar;
 public class Tiko2018HT {
   //Yhteys tietokantaan
   //private static final String AJURI = "org.postgresql.Driver";
@@ -788,9 +788,7 @@ public class Tiko2018HT {
 			  String asiakas_id = asiakas.getString("asiakas_id");
 			  
 			  // T‰m‰nhetkinen p‰iv‰m‰‰r‰.
-			  //java.util.Date utilDate = new Date();
-			  
-			  //java.sql.Date date = new java.sql.Date(utilDate.getTime());
+			  Date sqlDate = new java.sql.Date(Calendar.getInstance().getTime().getTime());
 			  
 			  // Haetaan kirjan hinta ja paino.
 			  ResultSet teoksenHinta = stmt.executeQuery("SELECT hinta FROM nide, teos WHERE teos.nimi = '" + teoksenNimi + "' AND teos.teos_id=nide.teos_id");
@@ -802,7 +800,7 @@ public class Tiko2018HT {
 			  String tila = "Varattu";
 			  
 			  // Lis‰t‰‰n uusi rivi tilaus-tauluun.
-			  stmt.executeUpdate("INSERT INTO Tilaus VALUES ('" + tilaus_id + "','" + asiakas_id + "','" + "?" + "','" + hinta + "','" + tila +"')");
+			  stmt.executeUpdate("INSERT INTO Tilaus VALUES ('" + tilaus_id + "','" + asiakas_id + "','" + sqlDate + "','" + hinta + "','" + tila +"')");
 			  
 			  System.out.println("Kirjan hinta on " + hinta);
 			  
