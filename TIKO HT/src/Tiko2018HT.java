@@ -827,6 +827,11 @@ public class Tiko2018HT {
 			  
 			  else if (vahvNumero.equals("2")) {
 				  
+				  // Jos käyttäjä haluaakin perua tilauksen, poistetaan tilaus.
+				  
+				  PreparedStatement poistaTilaus = con.prepareStatement("DELETE FROM Tilaus WHERE = ?");
+				  poistaTilaus.setString(1,asiakas_id);
+				  
 				  System.out.println("Tilaus peruutettu.");
 			  }
 			  
