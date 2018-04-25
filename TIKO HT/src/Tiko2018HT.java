@@ -7,8 +7,9 @@
  */
 
 import java.sql.*;
+import java.util.LinkedList;
 import java.util.Scanner;
-import java.util.Calendar;
+
 public class Tiko2018HT {
   //Yhteys tietokantaan
   //private static final String AJURI = "org.postgresql.Driver";
@@ -23,14 +24,17 @@ public class Tiko2018HT {
   
   private static Scanner sc = new Scanner(System.in);
   
-  //Sisäänkirjautunut käyttäjä
+
   private static final String KESKUS = "Keskusdivari";
   private static final String D1 = "Divari D1";
   
+  //Sisäänkirjautunut käyttäjä
   private static String kayttaja = "";
   private static boolean onYllapitaja = false;
   private static boolean keskus_oikeudet = false;
   private static boolean d1_oikeudet = false;
+  
+  private static int tilausId = 0;
   
   public static void main(String[] args) {
 
@@ -232,12 +236,12 @@ public class Tiko2018HT {
   //Etusivu
   public static void avaaEtusivu() throws SQLException {
     //Tulostetaan käyttäjän nimi ja rooli
-    System.out.println("\nTervetuloa sisään " + kayttaja + "\n");
+    System.out.println("\nTervetuloa sisään " + kayttaja);
     if(!onYllapitaja) {
-      System.out.println("Kayttäjäroolisi on: Asiakas");
+      System.out.println("Kayttäjäroolisi on: Asiakas\n");
     }
     else {
-      System.out.println("Käyttäjäroolisi on: Ylläpitaja");
+      System.out.println("Käyttäjäroolisi on: Ylläpitaja\n");
       if(keskus_oikeudet || d1_oikeudet) {
         System.out.print("Sinulla on oikeudet seuraaviin tietokantoihin: ");
         if(keskus_oikeudet) {
@@ -253,7 +257,7 @@ public class Tiko2018HT {
     //Lista mahdollisista komennoista riippuen roolista
     boolean lopeta = false;
     while(!lopeta) {
-      System.out.println("Etusivu\nValitse komento syöttämällä komentoa vastaava numero:");
+      System.out.println("\nEtusivu\nValitse komento syöttämällä komentoa vastaava numero:");
       System.out.println("[0] Kirjaudu ulos");
       if(onYllapitaja) {
         System.out.println("[1] Lisää teos keskustietokantaan");
@@ -372,6 +376,7 @@ public class Tiko2018HT {
     while(jatka) {
       System.out.println("Syötä hakusana:");
       String hakusana = sc.nextLine();
+      hakusana = hakusana.toLowerCase();
 
       //Määrittää kuinka monta hakutulosta saatiin
       PreparedStatement lkm = con.prepareStatement("SELECT COUNT(*) AS lkm FROM teos WHERE LOWER(nimi) LIKE ? OR LOWER(tekija) LIKE ? OR LOWER(tyyppi) LIKE ? OR LOWER(luokka) LIKE ?");
@@ -617,239 +622,298 @@ public class Tiko2018HT {
   // Käyttäjä hakee teosta
   public static void haeTeos() {
 	  
-	  Scanner sc = new Scanner(System.in);
-	  int valinta;
+	  String valinta;
 	  String nimi;
 	  String tekija;
 	  String tyyppi;
 	  String luokka;
 	  
 	  // Kysytää käyttäjältä millä hakutermillä hän teosta haluaa hakea.
-	  System.out.println("Millä haluat hakea teosta? 1. Teoksen nimellä 2. Teoksen tekijällä 3. Teoksen tyypillä 4. Teoksen luokalla");
-	  valinta = sc.nextInt();
-	  
-	  boolean oikeaValinta = false;
+	  boolean jatka = true;
 	  do {
+          System.out.println("Millä haluat hakea teosta? [1] Teoksen nimellä, [2] Teoksen tekijällä, [3] Teoksen tyypillä, [4] Teoksen luokalla");
+          valinta = sc.nextLine();
 	  
-		  if (valinta == 1) {
-			  oikeaValinta = true;
+		  if (valinta.equals("1")) {
 			  System.out.println("Anna teoksen nimi:");
 			  nimi = sc.nextLine();
-		  
-			  Statement stmt;
-		  
-			  try {
-				  // Tehdään kysely ja katsotaan, löytyykö hakusanalla teosta.
-				  stmt = con.createStatement();
-				  PreparedStatement prstmt = con.prepareStatement("SELECT * FROM teos WHERE nimi LIKE ?");
-				  prstmt.setString(1, "'%" + nimi + "%'");
-			  
-				  ResultSet rs = prstmt.executeQuery();
-				  System.out.println("Tulokset:");
-				  while(rs.next()) {
-					  System.out.println(rs.getString("nimi") + ", " + rs.getString("tekija") + ", " + rs.getString("isbn")
-					  						+ rs.getString("tyyppi") + ", " + rs.getString("luokka"));
-					  tilaaTeos(rs.getString("nimi"));
-				  
-				  }	  
-			  	}		
-			  
-			  catch (SQLException e) {
-				  System.out.println("Virhe!" + e.getMessage());
-			  
-			  }
+                          jatka = valitseTeos("nimi", nimi);
+
 		 }
 	  
-		  if (valinta == 2) {
-			  oikeaValinta = true;
+                  else if (valinta.equals("2")) {
 			  System.out.println("Anna tekijän nimi:");
-			  tekija = sc.nextLine();
-		  
-			  Statement stmt;
-		  
-			  try {
-				  // Tehdään kysely ja katsotaan, löytyykö hakusanalla teosta.
-				  stmt = con.createStatement();
-				  PreparedStatement prstmt = con.prepareStatement("SELECT * FROM teos WHERE tekij� LIKE ?");
-				  prstmt.setString(1, "'%" + tekija + "%'");
-			  
-				  ResultSet rs = prstmt.executeQuery();
-				  System.out.println("Tulokset:");
-				  while(rs.next()) {
-					  System.out.println(rs.getString("nimi") + ", " + rs.getString("tekija") + ", " + rs.getString("isbn")
-					  						+ rs.getString("tyyppi") + ", " + rs.getString("luokka"));
-					  tilaaTeos(rs.getString("nimi"));
-				  
-				  }	  
-			  }
-			  catch (SQLException e) {
-				  System.out.println("Virhe!" + e.getMessage());
-			  
-			  }
+			  tekija = sc.nextLine();       
+                          jatka = valitseTeos("tekija",tekija);
 		  }
 	  
-		  if (valinta == 3) {
-			  oikeaValinta = true;
+                  else if (valinta.equals("3")) {
 			  System.out.println("Anna teoksen tyyppi:");
 			  tyyppi = sc.nextLine();
-		  
-			  Statement stmt;
-		  
-			  try {
-				  // Tehdään kysely ja katsotaan, löytyykö hakusanalla teosta.
-				  stmt = con.createStatement();
-				  PreparedStatement prstmt = con.prepareStatement("SELECT * FROM teos WHERE tyyppi LIKE ?");
-				  prstmt.setString(1, "'%" + tyyppi + "%'");
-			  
-				  ResultSet rs = prstmt.executeQuery();
-				  System.out.println("Tulokset:");
-				  while(rs.next()) {
-					  System.out.println(rs.getString("nimi") + ", " + rs.getString("tekija") + ", " + rs.getString("isbn")
-					  						+ rs.getString("tyyppi") + ", " + rs.getString("luokka"));
-					  tilaaTeos(rs.getString("nimi"));
-				  }	  
-			  }
-			  catch (SQLException e) {
-				  System.out.println("Virhe!" + e.getMessage());
-			  
-			  }
+                          jatka = valitseTeos("tyyppi", tyyppi);
 		  }
 		  
-		  if (valinta == 4) {
-			  oikeaValinta = true;
-			  System.out.println("Anna teoksen luokka:");
+                  else if (valinta.equals("4")) {
+			System.out.println("Anna teoksen luokka:");
 		  	luokka = sc.nextLine();
+                        jatka = valitseTeos("luokka", luokka);
 		  
-		  	Statement stmt;
-		  
-		  	try {
-		  		// Tehdään kysely ja katsotaan, löytyykö hakusanalla teosta.
-		  		stmt = con.createStatement();
-		  		PreparedStatement prstmt = con.prepareStatement("SELECT * FROM teos WHERE luokka LIKE ?");
-		  		prstmt.setString(1, "'%" + luokka + "%'");
-			  
-		  		ResultSet rs = prstmt.executeQuery();
-		  		System.out.println("Tulokset:");
-		  		while(rs.next()) {
-				  System.out.println(rs.getString("nimi") + ", " + rs.getString("tekija") + ", " + rs.getString("isbn")
-				  						+ rs.getString("tyyppi") + ", " + rs.getString("luokka"));
-				  tilaaTeos(rs.getString("nimi"));
-				  
-		  		}	  
-		  	}
-		  	catch (SQLException e) {
-		  		System.out.println("Virhe!" + e.getMessage());
-			  
-		  	}
+
 		  }
+                  else {
+                    System.out.println("Virheellinen komento!");
+                  }
 	  
 	  	}
 	  
-	  while (!oikeaValinta);
-	 
-	  
+	  while (jatka);  
   }
   
- //K�ytt�j� tilaa haetun tilauksen.
- public static void tilaaTeos(String teoksenNimi) {
+  public static boolean valitseTeos(String hakukohde, String komento) {
+    Statement stmt;
+    boolean jatka = true;
 
-	  Scanner sc = new Scanner(System.in);
-	  //Kysyt��n k�ytt�j�lt� haluaako h�n tilauksen kyseisest� kirjasta tehd�.
-	  System.out.println("Haluatko tilata t�m�n teoksen? [1]. Kyll� [2]. En");
-	  String valinta = sc.nextLine();
-	  
-	  while (!valinta.equals("1") && (!valinta.equals("2"))) {
-		  
-		  System.out.println("Virheellinen sy�te!");
-		  valinta = sc.nextLine();
-	  }
-	  
-	  if (valinta.equals('1')) {
-		  
-		  // Haetaan teoksen tiedot tilauksen tekemist� varten.
-		  
-		  Statement stmt;
-		  
-		  try {
-			  
-			  stmt = con.createStatement();
-			  
-			  // Tilaus-id on nykyiset tilaukset + 1.
-			  PreparedStatement tilaukset = con.prepareStatement("COUNT(*) as lkm FROM tilaus");
-			  ResultSet rs = tilaukset.executeQuery();
-			  int tilaus_id = rs.getInt("lkm");
-			  
-			  // Haetaan asiakas_id kysym�ll� k�ytt�j�nime� (Onko parempi tapa saada asiakas_id t�ss�?)
-			  System.out.println("Anna k�ytt�j�tunnus:");
-			  String knimi = sc.nextLine();
-			  
-			  
-			  ResultSet asiakas = stmt.executeQuery(("SELECT asiakas_id FROM asiakas WHERE ktunnus ='" + knimi + "'"));
-			  String asiakas_id = asiakas.getString("asiakas_id");
-			  
-			  // T�m�nhetkinen p�iv�m��r�.
-			  Date sqlDate = new java.sql.Date(Calendar.getInstance().getTime().getTime());
-			  
-			  // Haetaan kirjan hinta ja paino.
-			  ResultSet teoksenHinta = stmt.executeQuery("SELECT hinta FROM nide, teos WHERE teos.nimi = '" + teoksenNimi + "' AND teos.teos_id=nide.teos_id");
-			  
-			  String hinta = teoksenHinta.getString("hinta");
-			  
-			  // Tilauksen tila.
-			  
-			  String tila = "Varattu";
-			  
-			  // Lis�t��n uusi rivi tilaus-tauluun.
-			  stmt.executeUpdate("INSERT INTO Tilaus VALUES ('" + tilaus_id + "','" + asiakas_id + "','" + sqlDate + "','" + hinta + "','" + tila +"')");
-			  
-			  System.out.println("Kirjan hinta on " + hinta);
-			  
-			  System.out.println("Vahvistetaanko tilaus?[1]Kyll� [2]Ei");
-			  
-			  String vahvNumero = sc.nextLine();
-			  
-			  while (!vahvNumero.equals("1") && (!vahvNumero.equals("2"))) {
-				  
-				  System.out.println("Virheellinen sy�te!");
-				  valinta = sc.nextLine();
-			  }
-			  
-			  if (vahvNumero.equals("1")) {
-				  
-				  PreparedStatement paivitaTila = con.prepareStatement("UPDATE Tilaus SET tila = ?" + "WHERE tilaus_id = ?");
-				  paivitaTila.setString(1, "Tilattu");
-				  paivitaTila.setInt(2, tilaus_id);
-				  paivitaTila.executeUpdate();
-				  System.out.println("Tilaus vahvistettu.");
-			  }
-			  
-			  else if (vahvNumero.equals("2")) {
-				  
-				  // Jos k�ytt�j� haluaakin perua tilauksen, poistetaan tilaus.
-				  
-				  PreparedStatement poistaTilaus = con.prepareStatement("DELETE FROM Tilaus WHERE = ?");
-				  poistaTilaus.setString(1,asiakas_id);
-				  
-				  System.out.println("Tilaus peruutettu.");
-			  }
-			  
-		  }
-		  
-		  catch (SQLException e) {
-			  
-			  System.out.println("Virhe!");
-			  
-		  }
-		  
-	  }
-	  
-	  else if (valinta.equals('2')) {
-		  
-		  System.out.println("Tilausta ei tehty.");
-		  
-	  }
-		  
+    try {
+              // Tehdään kysely ja katsotaan, löytyykö hakusanalla teosta.
+              stmt = con.createStatement();
+              PreparedStatement prstmt = con.prepareStatement("SELECT * FROM teos WHERE " + hakukohde + " LIKE ?");
+              prstmt.setString(1, "%" + komento + "%");
+
+              ResultSet rs = prstmt.executeQuery();
+              System.out.println("Haulla saatiin seuraavat tulokset:");
+              System.out.println();
+
+              //Säilöö teosten teos_id tunnukset, listasta voidaan valita indeksiä vastaava id
+              LinkedList<Integer> idLista = new LinkedList<>();
+              int i = 1;
+              //Tulostetaan kaikki teokset jotka hakusanalla löytyy
+              while(rs.next()) {
+                      idLista.add(rs.getInt("teos_id"));
+                      System.out.println("[" + i +"] " + rs.getString("nimi") + ", " + rs.getString("tekija") + ", " + rs.getString("isbn") + ", " +
+                                                                    rs.getString("tyyppi") + ", " + rs.getString("luokka"));
+                      i++;
+              }
+              if(i > 0) {
+                //Valitaan teos ja jatketaan tilausta, varmistetaan tilaus tai perutaan tilaus.
+                System.out.println();
+                System.out.println("Jatkaaksesi tilausta valitse teosta vastaava numero:");
+                System.out.println("Siirry tilauksen varmistukseen painamalla [0]:");
+                System.out.println("Peruuta tilaus painamalla mitä tahansa muuta näppäintä:");
+                String teosValinta = sc.nextLine();
+                if(teosValinta.matches("[0-9]+") && !teosValinta.equals("0") && Integer.parseInt(teosValinta) <= i) {
+                  jatka = false;
+                  tilaaTeos(idLista.get(Integer.parseInt(teosValinta)-1));
+                }
+                else if(teosValinta.equals("0")) {
+                  vahvistaTilaus();
+                  jatka = false;
+                }
+                else {
+                  jatka = false;
+                  peruTilaus();
+                }
+              }
+              else
+                System.out.println("Yhtäkään teosta ei löydynyt");	  
+    }
+    catch (SQLException e) {
+            System.out.println("Virhe!" + e.getMessage());
+    }
+    return jatka;
+  }
+  
+ //Käyttäjä tilaa haetun tilauksen.
+  public static void tilaaTeos(int teoksenId) throws SQLException {
+           
+    int nideId = 0;
+
+      //Haetaan tilausta vastaava teos ja katsotaan onko siinä vapaita niteitä
+      PreparedStatement teosHaku = con.prepareStatement("SELECT * FROM teos WHERE teos_id = " + teoksenId);
+      ResultSet teokset = teosHaku.executeQuery();
+      teokset.next();
+      System.out.println("\nValittu teos on: " + teokset.getString("nimi") + ", " + teokset.getString("tekija"));
+      PreparedStatement nideHaku = con.prepareStatement("SELECT * FROM nide WHERE teos_id = " + teoksenId + " AND myynti_pvm IS NULL");
+      ResultSet niteet = nideHaku.executeQuery();
+      if(niteet.next()) {
+        System.out.println("Teoksella on vapaita niteitä");
+        nideId = niteet.getInt("nide_id");
+      }
+      else
+        System.out.println("Valitettavasti teos on loppuunmyyty");
+
+
+     if(nideId != 0) {
+       //Kysytään käyttäjältä haluaako hän tilauksen kyseisestä kirjasta tehdä.
+       System.out.println("Haluatko tilata tämän teoksen? [1] Kyllä, [2] En");
+       String valinta = sc.nextLine();
+
+       while (!valinta.equals("1") && (!valinta.equals("2"))) {
+
+               System.out.println("Virheellinen syöte!");
+               valinta = sc.nextLine();
+       }
+
+       if (valinta.equals("1")) {
+
+         // Haetaan teoksen tiedot tilauksen tekemistä varten.
+
+         Statement stmt;
+         stmt = con.createStatement();
+
+         boolean samaTilaus = false;
+         
+         if(tilausId == 0) {
+         // Tilaus-id on nykyiset tilaukset + 1.
+         PreparedStatement tilaukset = con.prepareStatement("SELECT COUNT(*) as lkm FROM tilaus");
+         ResultSet tilaus = tilaukset.executeQuery();
+         tilaus.next();
+         tilausId = tilaus.getInt("lkm") + 1;
+         }
+         else {
+           samaTilaus = true;        
+         }
+
+         ResultSet asiakas = stmt.executeQuery(("SELECT asiakas_id FROM asiakas WHERE ktunnus ='" + kayttaja + "'"));
+         asiakas.next();
+         String asiakas_id = asiakas.getString("asiakas_id");
+
+         // Tämänhetkinen päivämäärä.
+         java.sql.Date date = new java.sql.Date(new java.util.Date().getTime());
+
+         // Haetaan kirjan hinta ja paino.
+         ResultSet teosTiedot = stmt.executeQuery("SELECT hinta, massa FROM nide WHERE teos_id = " + teoksenId);
+         teosTiedot.next();
+         
+         String paino = teosTiedot.getString("massa");
+         String hinta = teosTiedot.getString("hinta");
+
+         // Tilauksen tila.
+
+         String tila = "Varattu";
+
+         // Lisätään uusi rivi tilaus-tauluun jos tilauksessa ei aiempia niteitä, jos on aiempia niteitä, niin päivitetään vain hinta
+         if(samaTilaus) {
+           stmt.executeUpdate("UPDATE tilaus SET hinta = hinta + " + hinta);
+         }
+         else
+           stmt.executeUpdate("INSERT INTO tilaus VALUES ('" + tilausId + "','" + asiakas_id + "','" + date + "','" + hinta + "','" + tila +"')");
+         stmt.executeUpdate("INSERT INTO sisaltaa VALUES('" + tilausId + "','" + nideId + "')");
+         
+         //Lisätään uusi rivi "liittyy" -tauluun, eli uusi postimaksu
+         int pmaksu_id = 6;
+         PreparedStatement postimaksut = con.prepareStatement("SELECT pmaksu_id FROM postimaksu WHERE paino >= " + paino + " ORDER BY pmaksu_id ASC LIMIT 1");
+         ResultSet pmaksu = postimaksut.executeQuery();
+         if(pmaksu.next()) {
+           pmaksu_id = pmaksu.getInt("pmaksu_id");
+         }
+         
+         //Lisätään uusi rivi liittyy tauluu, joka kertoo mitä niteitä tilaukseen kuuluu
+         PreparedStatement haeLkm = con.prepareStatement("SELECT COUNT(*) AS lkm FROM liittyy");
+         ResultSet lkm = haeLkm.executeQuery();
+         lkm.next();
+         int liittyy_id = lkm.getInt("lkm");
+         stmt.executeUpdate("INSERT INTO liittyy VALUES('" + tilausId + "','" + pmaksu_id + "','" + liittyy_id + "')");
+         PreparedStatement paivitaTila = con.prepareStatement("UPDATE nide SET myynti_pvm = '" + date + "' WHERE nide_id = " + nideId);
+         paivitaTila.executeUpdate();
+         
+         //Haluaako käyttä lisätä toisen niteen tilaukseen
+         System.out.println("\nTeos lisätty tilaukseen.\n[1] Lisää toinen teos tilaukseen, [2] Vahvista tilaus");
+         String toinenTilaus = sc.nextLine();
+         while(!toinenTilaus.equals("1") && !toinenTilaus.equals("2")) {
+            System.out.println("Virheellinen syöte!");
+            toinenTilaus = sc.nextLine();
+         }
+         if(toinenTilaus.equals("1")) {
+           haeTeos();
+         }
+         else {
+           vahvistaTilaus();
+         }
+       }
+       else if (valinta.equals("2")) {
+         System.out.println("Palataan hakuun...");
+         haeTeos();
+
+       }  
+     }
+     else {
+       System.out.println("Palataan hakuun...");
+       haeTeos();
+     }
+  }
+  
+  //Peruu tilauksen. Poistaa kaiken tilaukseen liittyvän tietokannasta.
+  private static void peruTilaus() throws SQLException {
+    Statement stmt = con.createStatement();
+    PreparedStatement haeNiteet = con.prepareStatement("SELECT nide.nide_id FROM nide, sisaltaa, tilaus WHERE tilaus.tilaus_id = " + tilausId +
+                                                       " AND tilaus.tilaus_id = sisaltaa.tilaus_id AND sisaltaa.nide_id = nide.nide_id");
+    ResultSet niteet = haeNiteet.executeQuery();
+    while(niteet.next()) {
+      stmt.executeUpdate("UPDATE nide SET myynti_pvm = NULL WHERE nide_id = " + niteet.getInt("nide_id"));
+    }
+    
+    stmt.executeUpdate("DELETE FROM liittyy WHERE tilaus_id = " + tilausId);
+    stmt.executeUpdate("DELETE FROM sisaltaa WHERE tilaus_id = " + tilausId);
+    stmt.executeUpdate("DELETE FROM tilaus WHERE tilaus_id = " + tilausId);
+
+  }
+  
+   private static void vahvistaTilaus() throws SQLException {
+     
+     //katsotaan onko tilausIdtä olemassa, eli onko se jotain muuta kuin alkuarvo
+     if(tilausId != 0) {
+       
+     //Lasketaan hinnat ja postikulut ja tulostetaan ne käyttäjälle
+      PreparedStatement hintaHaku = con.prepareStatement("SELECT hinta FROM tilaus WHERE tilaus_id = " + tilausId);
+      ResultSet hinnat = hintaHaku.executeQuery();
+      hinnat.next();
+      double hinta = hinnat.getDouble("hinta");
+
+      double postikulut = 0;
+      PreparedStatement pmaksuHaku = con.prepareStatement("SELECT postimaksu.hinta FROM postimaksu, tilaus, liittyy " +
+                                       "WHERE tilaus.tilaus_id = " + tilausId + " AND tilaus.tilaus_id = liittyy.tilaus_id AND " +
+                                       "liittyy.pmaksu_id = postimaksu.pmaksu_id");
+      ResultSet pmaksut = pmaksuHaku.executeQuery();
+      while(pmaksut.next()) {
+        postikulut += pmaksut.getDouble("hinta");
+      }
+
+      System.out.println("\nTilauksen hinta = " + hinta + " ja toimituskulut = " + postikulut);
+
+      //Vahvistetaanko vai perutaanko tilaus
+      System.out.println("Vahvistetaanko tilaus? [1] Kyllä, [2] Ei");
+
+      String vahvNumero = sc.nextLine();
+
+      while (!vahvNumero.equals("1") && (!vahvNumero.equals("2"))) {
+
+        System.out.println("Virheellinen syöte!");
+        vahvNumero = sc.nextLine();
+      }
+
+      //Vahvistus
+      if (vahvNumero.equals("1")) {
+        PreparedStatement paivitaTila = con.prepareStatement("UPDATE tilaus SET tila = ?" + "WHERE tilaus_id = ?");
+        paivitaTila.setString(1, "Tilattu");
+        paivitaTila.setInt(2, tilausId);
+        paivitaTila.executeUpdate();
+
+        System.out.println("Tilaus vahvistettu.");
+        tilausId = 0;
+      }
+
+      //Peruminen
+      else if (vahvNumero.equals("2")) {
+        peruTilaus();
+        tilausId = 0;
+        System.out.println("Tilaus peruutettu.");
+      }
+      
+    }
+     else {
+       System.out.println("Tilausta ei ole olemassa.\nSiirrytään takaisin etusivulle");
+     }
+  }
+   
  }
-  
-  
-}
+
